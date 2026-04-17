@@ -29,6 +29,17 @@ let pipeY = 0;
 let topPipeImg;
 let bottomPipeImg;
 
+let topPipeImg;
+let bottomPipeImg;
+
+// --- ADD THESE LINES ---
+let flapSound = new Audio("./flap.mp3");
+let hitSound = new Audio("./hit.mp3");
+let scoreSound = new Audio("./score.mp3");
+let bgMusic = new Audio("./music.mp3");
+bgMusic.loop = true;
+bgMusic.volume = 0.2; 
+// -----------------------
 //physics
 let velocityX = -2; //pipes moving left speed
 let velocityY = 0; //bird jump speed
@@ -78,8 +89,10 @@ function update() {
     bird.y = Math.max(bird.y + velocityY, 0); //apply gravity to current bird.y, limit the bird.y to top of the canvas
     context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
 
-    if (bird.y > board.height) {
+   if (bird.y > board.height) {
+        if (!gameOver) hitSound.play(); // <--- ADD THIS LINE
         gameOver = true;
+    }
     }
 
     //pipes
@@ -88,13 +101,16 @@ function update() {
         pipe.x += velocityX;
         context.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height);
 
-        if (!pipe.passed && bird.x > pipe.x + pipe.width) {
-            score += 0.5; //0.5 because there are 2 pipes! so 0.5*2 = 1, 1 for each set of pipes
+       if (!pipe.passed && bird.x > pipe.x + pipe.width) {
+            score += 0.5; 
+            
+            // --- ADD THESE 3 LINES ---
+            if (score % 1 === 0) { 
+                scoreSound.play(); 
+            }
+            // -------------------------
+            
             pipe.passed = true;
-        }
-
-        if (detectCollision(bird, pipe)) {
-            gameOver = true;
         }
     }
 
@@ -146,17 +162,15 @@ function placePipes() {
 }
 
 function moveBird(e) {
-    if (e.code == "Space" || e.code == "ArrowUp" || e.code == "KeyX") {
-        //jump
-        velocityY = -6;
+   if (e.code == "Space" || e.code == "ArrowUp" || e.code == "KeyX") {
+        // --- ADD THESE ---
+        flapSound.currentTime = 0; 
+        flapSound.play();
+        
+        if (bgMusic.paused && !gameOver) bgMusic.play(); 
+        // -----------------
 
-        //reset game
-        if (gameOver) {
-            bird.y = birdY;
-            pipeArray = [];
-            score = 0;
-            gameOver = false;
-        }
+        velocityY = -6;
     }
 }
 
