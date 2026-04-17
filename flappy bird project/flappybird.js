@@ -1,35 +1,34 @@
-// Board setup
+// Board and Game Variables
 let board;
 let boardWidth = 360;
 let boardHeight = 640;
 let context;
 
-// Bird setup
+// Bird Setup
 let birdWidth = 34; 
 let birdHeight = 24;
 let birdX = boardWidth / 8;
 let birdY = boardHeight / 2;
 let birdImg;
-
 let bird = { x: birdX, y: birdY, width: birdWidth, height: birdHeight };
 
-// Pipes
+// Pipe Setup
 let pipeArray = [];
 let pipeWidth = 64;
 let pipeHeight = 512;
 let pipeX = boardWidth;
 let topPipeImg, bottomPipeImg;
 
-// Physics & Game State
-let velocityX = -2;
-let velocityY = 0;
+// Physics
+let velocityX = -2; 
+let velocityY = 0; 
 let gravity = 0.4;
 let gameOver = false;
 let score = 0;
 
-// API & Data Variables (For Rubric: Data Display & Fetch)
-let currentWord = "Fly!";
-let currentDef = "Search a word or pass pipes!";
+// Rubric Variables: Data & Audio
+let currentWord = "FLAPPY";
+let currentDefinition = "Search a word or pass pipes!";
 let wordAudio = null;
 
 // Audio Assets
@@ -57,76 +56,74 @@ window.onload = function() {
     // Event Listeners
     document.addEventListener("keydown", moveBird);
     
-    // Search Functionality (For Rubric: Search & Event Handling)
-    const searchInput = document.getElementById("wordSearch");
-    searchInput.addEventListener("change", (e) => {
-        fetchWord(e.target.value);
+    // Rubric: Form Handling & Search
+    const searchBar = document.getElementById("wordSearch");
+    searchBar.addEventListener("change", (e) => {
+        fetchDictionaryData(e.target.value);
     });
 
     requestAnimationFrame(update);
     setInterval(placePipes, 1500);
 }
 
-// Fetch API Function (For Rubric: Fetch API Usage)
-async function fetchWord(word) {
+// Rubric: Fetch API Usage
+async function fetchDictionaryData(word) {
     try {
         const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
         const data = await response.json();
+        
         if (data[0]) {
-            currentWord = data[0].word;
-            currentDef = data[0].meanings[0].definitions[0].definition;
-            // Play Audio from API (For Rubric: Advanced Features)
+            currentWord = data[0].word.toUpperCase();
+            currentDefinition = data[0].meanings[0].definitions[0].definition;
+            
+            // Rubric: Advanced Feature - Dictionary Audio
             if (data[0].phonetics[0]?.audio) {
                 if(wordAudio) wordAudio.pause();
                 wordAudio = new Audio(data[0].phonetics[0].audio);
                 wordAudio.play();
             }
         }
-    } catch (err) {
-        currentWord = "Err!";
-        currentDef = "Word not found.";
+    } catch (error) {
+        currentWord = "OOPS!";
+        currentDefinition = "Word not found in dictionary.";
     }
 }
 
 function update() {
     requestAnimationFrame(update);
     if (gameOver) return;
-
     context.clearRect(0, 0, board.width, board.height);
 
-    // Bird physics
+    // Bird Physics
     velocityY += gravity;
     bird.y = Math.max(bird.y + velocityY, 0);
     context.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
 
     if (bird.y > board.height) {
-        if (!gameOver) hitSound.play();
         gameOver = true;
     }
 
-    // Pipes logic
+    // Pipe Logic
     for (let i = 0; i < pipeArray.length; i++) {
         let pipe = pipeArray[i];
         pipe.x += velocityX;
         context.drawImage(pipe.img, pipe.x, pipe.y, pipe.width, pipe.height);
 
-        // Scoring & Fetch Trigger
+        // Scoring and Triggering New Word
         if (!pipe.passed && bird.x > pipe.x + pipe.width) {
             score += 0.5;
             if (score % 1 === 0) {
                 scoreSound.play();
-                // Get a new random word every time we pass a set of pipes
-                const words = ["velocity", "gravity", "altitude", "rhythm", "lexicon"];
-                fetchWord(words[Math.floor(Math.random() * words.length)]);
+                // Fetch a random educational word every point
+                const gameWords = ["velocity", "gravity", "algorithm", "binary", "canvas"];
+                fetchDictionaryData(gameWords[Math.floor(Math.random() * gameWords.length)]);
             }
             pipe.passed = true;
         }
 
         if (detectCollision(bird, pipe)) {
-            if (!gameOver) {
-                hitSound.play();
-                bgMusic.pause();
-            }
+            hitSound.play();
+            bgMusic.pause();
             gameOver = true;
         }
     }
@@ -135,30 +132,33 @@ function update() {
         pipeArray.shift();
     }
 
-    // Data Display (For Rubric: DOM Manipulation/Canvas)
+    // Rubric: Data Display (Definitions on screen)
     context.fillStyle = "white";
     context.font = "45px sans-serif";
     context.fillText(score, 5, 45);
 
     context.fillStyle = "yellow";
-    context.font = "20px Courier New";
-    context.fillText(currentWord.toUpperCase(), 5, 80);
+    context.font = "bold 20px Arial";
+    context.fillText(currentWord, 5, 85);
 
     context.fillStyle = "lightgray";
-    context.font = "12px Arial";
-    // Basic text wrapping for definition
-    context.fillText(currentDef.substring(0, 50) + "...", 5, 100);
+    context.font = "14px Arial";
+    // Truncate long definitions to fit the screen
+    let displayDef = currentDefinition.length > 50 ? currentDefinition.substring(0, 47) + "..." : currentDefinition;
+    context.fillText(displayDef, 5, 110);
 
     if (gameOver) {
-        context.fillStyle = "white";
+        context.fillStyle = "red";
         context.font = "45px sans-serif";
-        context.fillText("GAME OVER", 5, 150);
+        context.fillText("GAME OVER", 5, 200);
+        context.font = "20px sans-serif";
+        context.fillText("Press Space to Restart", 5, 240);
     }
 }
 
 function placePipes() {
     if (gameOver) return;
-    let randomPipeY = pipeY - pipeHeight / 4 - Math.random() * (pipeHeight / 2);
+    let randomPipeY = -pipeHeight/4 - Math.random()*(pipeHeight/2);
     let openingSpace = board.height / 4;
 
     pipeArray.push({ img: topPipeImg, x: pipeX, y: randomPipeY, width: pipeWidth, height: pipeHeight, passed: false });
@@ -166,11 +166,10 @@ function placePipes() {
 }
 
 function moveBird(e) {
-    if (e.code == "Space" || e.code == "ArrowUp" || e.code == "KeyX") {
-        flapSound.currentTime = 0;
+    if (e.code == "Space" || e.code == "ArrowUp") {
         flapSound.play();
         if (bgMusic.paused && !gameOver) bgMusic.play();
-
+        
         velocityY = -6;
 
         if (gameOver) {

@@ -1,9 +1,12 @@
-body {
-    font-family:'Courier New', Courier, monospace;
-    text-align: center;
-}
 
 #board {
-    /* background-color: skyblue; */
+    /* This ensures your background image still shows behind the pipes */
     background-image: url("./flappybirdbg.png");
+    background-size: cover;
+    display: block;
+}
+
+/* Optional: Smooth cursor for the search bar */
+input#wordSearch {
+    caret-color: #FACC15;
 }
